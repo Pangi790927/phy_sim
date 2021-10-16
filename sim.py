@@ -3,6 +3,8 @@ import pygame, sys
 import glm
 from pygame.locals import *
 
+import intersect
+
 # Utils:
 # ==============================================================================
 
@@ -13,7 +15,7 @@ class Color:
     BLUE =  (  0,   0, 255)
     WHITE = (255, 255, 255)
 
-class _dotdict(dict):
+class dotdict(dict):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
@@ -26,21 +28,6 @@ Vec2 = glm.vec2
 Vec3 = glm.vec3
 Vec4 = glm.vec4
 
-# https://codereview.stackexchange.com/questions/86421/
-#       line-segment-to-circle-collision-algorithm
-def seg_circ_intersect(A, B, Q, rad):
-    V = B - A
-    a = glm.dot(V, V)
-    b = 2 * glm.dot(V, A - Q)
-    c = glm.dot(A, A) + glm.dot(Q, Q) - 2 * glm.dot(A, Q) - rad**2
-    disc = b**2 - 4*a*c
-    if disc < 0:
-        return None, None
-    t1 = (-b + disc ** 0.5) / (2 * a)
-    t2 = (-b - disc ** 0.5) / (2 * a)
-    I1 = A + V * t1 if 0 <= t1 <= 1 else None
-    I2 = A + V * t2 if 0 <= t2 <= 1 else None
-    return I1, I2
 
 # Screen and state:
 # ==============================================================================
@@ -48,7 +35,7 @@ def seg_circ_intersect(A, B, Q, rad):
 state = None
 def init(width, height, scale=1):
     global state
-    state = _dotdict({
+    state = dotdict({
         'width': None,
         'height': None,
         'scale': None,
@@ -100,8 +87,8 @@ def loop(draw_fn, event_fn=_none_fn, exit_fn=_none_fn):
         if not state.alive:
             break
         state.surface.fill(Color.WHITE)
-        draw_fn()
         _clickable_on_draw()
+        draw_fn()
         pygame.display.update()
 
 
@@ -147,7 +134,7 @@ def draw_dot(pos, color=Color.BLACK):
     pos = pos2screen(pos)
     state.surface.set_at(pos, color)
 
-def draw_rect(posA, posB, color=Color.BLACK, filled=False):
+def draw_aabb(posA, posB, color=Color.BLACK, filled=False):
     posA = pos2screen(posA)
     posB = pos2screen(posB)
     minx = min(posA[0], posB[0])
@@ -167,6 +154,25 @@ def draw_circle(pos, rad, color=Color.BLACK, filled=False):
     if filled:
         border = 0
     pygame.draw.circle(state.surface, color, pos, rad, border)
+
+def draw_triangle(posA, posB, posC, color=Color.BLACK, filled=False):
+    posA = pos2screen(posA)
+    posB = pos2screen(posB)
+    posC = pos2screen(posC)
+    border = 1
+    if filled:
+        border = 0
+    pygame.draw.polygon(state.surface, color, [posA, posB, posC], border)
+
+def draw_quad(posA, posB, posC, posD, color=Color.BLACK, filled=False):
+    posA = pos2screen(posA)
+    posB = pos2screen(posB)
+    posC = pos2screen(posC)
+    posD = pos2screen(posD)
+    border = 1
+    if filled:
+        border = 0
+    pygame.draw.polygon(state.surface, color, [posA, posB, posC, posD], border)
 
 # Clickable objects:
 # ==============================================================================
@@ -226,7 +232,7 @@ class ClickableCircle(Clickable):
 
     def on_click(self, pos):
         clicked = False
-        if glm.length2(pos - self.pos) < self.radius * self.radius:
+        if intersect.glm_p_circ(pos, self.pos, self.radius):
             clicked = True
         super().on_click(clicked, pos)
         return clicked
@@ -248,8 +254,7 @@ class ClickableLine(Clickable):
         Q = pos
         A = self.pos
         B = self.B
-        I1, I2 = seg_circ_intersect(A, B, Q, rad)
-        if I1 or I2:
+        if intersect.glm_seg_circ(A, B, Q, rad):
             clicked = True
         super().on_click(clicked, pos)
         return clicked
@@ -260,7 +265,7 @@ class ClickableLine(Clickable):
             self.B = self.B + pos - state.clickable.old_pos
 
 def _clickable_init():
-    state.clickable = _dotdict({
+    state.clickable = dotdict({
         'elements': [],
         'old_pos': Vec2(0, 0)
     })
