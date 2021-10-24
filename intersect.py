@@ -17,17 +17,18 @@ _AABB_FIX = True
 
 # on coincident: 4 directions: C1 + glm.vec(+/-1, +/-1)
 def circle_circle(C1, r1, C2, r2):
-    return glm_circ_circ(glm.vec2(C1), r1, glm.vec2(C2), r2)
+    return glm_circ_circ(glm.vec2(C1), float(r1), glm.vec2(C2), float(r2))
 
 def segment_circle(A, B, center, radius):
-    return glm_seg_circ(glm.vec2(A), glm.vec2(B), glm.vec2(center), radius)
+    return glm_seg_circ(glm.vec2(A), glm.vec2(B), glm.vec2(center),
+            float(radius))
 
 # on coincident: the overlap interval
 def segment_segment(A1, B1, A2, B2):
     return glm_seg_seg(glm.vec2(A1), glm.vec2(B1), glm.vec2(A2), glm.vec2(B2))
 
 def point_circle(P, C, radius):
-    return glm_p_circ(glm.vec2(P), glm.vec2(C), radius)
+    return glm_p_circ(glm.vec2(P), glm.vec2(C), float(radius))
 
 def point_aabb(P, AA, BB):
     return glm_p_aabb(glm.vec2(P), glm.vec2(AA), glm.vec2(BB))
@@ -36,10 +37,10 @@ def point_parallelogram(P, O, N, M):
     return glm_p_para(glm.vec2(P), glm.vec2(O), glm.vec2(N), glm.vec2(M))
 
 def point_triangle(P, E, F, G):
-    return glm_p_tri(glm.vec2(P), glm.vec2(A), glm.vec2(B), glm.vec2(C))
+    return glm_p_tri(glm.vec2(P), glm.vec2(E), glm.vec2(F), glm.vec2(G))
 
 def aabb_circle(AA, BB, C, radius):
-    return glm_aabb_circ(glm.vec2(AA), glm.vec2(BB), glm.vec2(C), radius)
+    return glm_aabb_circ(glm.vec2(AA), glm.vec2(BB), glm.vec2(C), float(radius))
 
 def aabb_segment(AA, BB, A, B):
     return glm_aabb_seg(glm.vec2(AA), glm.vec2(BB), glm.vec2(A), glm.vec2(B))
@@ -49,7 +50,7 @@ def aabb_aabb(AA1, BB1, AA2, BB2):
             glm.vec2(BB2))
 
 def circle_parallelogram(C, radius, O, N, M):
-    return glm_circ_para(glm.vec2(C), radius,
+    return glm_circ_para(glm.vec2(C), float(radius),
             glm.vec2(O), glm.vec2(N), glm.vec2(M))
 
 def segment_parallelogram(A, B, O, N, M):
@@ -65,7 +66,7 @@ def parallelogram_parallelogram(O1, N1, M1, O2, N2, M2):
             glm.vec2(O2), glm.vec2(N2), glm.vec2(M2))
 
 def circle_triangle(C, radius, E, F, G):
-    return glm_circ_tri(glm.vec2(C), radius,
+    return glm_circ_tri(glm.vec2(C), float(radius),
             glm.vec2(E), glm.vec2(F), glm.vec2(G))
 
 def segment_triangle(A, B, E, F, G):
@@ -208,7 +209,7 @@ def glm_p_aabb(P, AA, BB):
     if _AABB_FIX:
         AA, BB = _aabb_fix(AA, BB)
     if AA.x <= P.x <= BB.x and AA.y <= P.y <= BB.y:
-        return [p]
+        return [P]
     return None
 
 def glm_p_para(P, O, N, M):
@@ -302,7 +303,7 @@ def glm_seg_tri(A, B, E, F, G):
     tri_segs = _get_tri_segs(E, F, G)
     def _seg_seg_local(a, b):
         return glm_seg_seg(a, b, A, B)
-    return _segs_intersect(tri_segs, _seg_circ_local)
+    return _segs_intersect(tri_segs, _seg_seg_local)
 
 def glm_aabb_tri(AA, BB, E, F, G):
     if _AABB_FIX:

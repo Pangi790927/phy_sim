@@ -15,16 +15,31 @@ class Shape():
         self.filled = filled
 
     def draw(self):
-        Exception("implement draw!")
+        raise Exception("implement draw!")
 
     def intersect(self, oth_shape):
-        Exception("implement intersect!")
+        raise Exception("implement intersect!")
+
+    def get_origin(self):
+        raise Exception("implement get origin")
+
+    def set_origin(self, pos):
+        raise Exception("implement set origin")
+
+    def translate_origin(self, diff):
+        raise Exception("implement translate origin")
+
+    # this function is the main reason for having a Point Shape
+    def intersect_point(self, pos):
+        p = Point(pos)
+        return p.intersect(self)
 
 class Circle(Shape):
     def __init__(self, center, radius, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.C = glm.vec2(center)
         self.r = radius
+        self.origin = self.C
 
     def intersect(self, oth):
         if isinstance(oth, Circle):
@@ -39,10 +54,19 @@ class Circle(Shape):
             return oth.intersect(self)
         if isinstance(oth, Point):
             return oth.intersect(self)
-        Exception("No known way to intersect with shape!")
+        raise Exception("No known way to intersect with shape!")
 
     def draw(self):
         sim.draw_circle(self.C, self.r, color=self.color, filled=self.filled)
+
+    def get_origin(self):
+        return self.C
+
+    def set_origin(self, pos):
+        self.C = glm.vec2(pos)
+
+    def translate_origin(self, diff):
+        self.C += glm.vec2(diff)
 
 class Segment(Shape):
     def __init__(self, A, B, *args, **kwargs):
@@ -63,10 +87,22 @@ class Segment(Shape):
             return oth.intersect(self)
         if isinstance(oth, Point):
             return oth.intersect(self)
-        Exception("No known way to intersect with shape!")
+        raise Exception("No known way to intersect with shape!")
 
     def draw(self):
         sim.draw_line(self.A, self.B, color=self.color)
+
+    def get_origin(self):
+        return self.A
+
+    def set_origin(self, pos):
+        diff = self.B - self.A
+        self.A = glm.vec2(pos)
+        self.B = self.A + diff
+
+    def translate_origin(self, diff):
+        self.A += glm.vec2(diff)
+        self.B += glm.vec2(diff)
 
 class Triangle(Shape):
     def __init__(self, E, F, G, *args, **kwargs):
@@ -91,11 +127,26 @@ class Triangle(Shape):
             return oth.intersect(self)
         if isinstance(oth, Point):
             return oth.intersect(self)
-        Exception("No known way to intersect with shape!")
+        raise Exception("No known way to intersect with shape!")
 
     def draw(self):
         sim.draw_triangle(self.E, self.F, self.G,
                 color=self.color, filled=self.filled)
+
+    def get_origin(self):
+        return self.E
+
+    def set_origin(self, pos):
+        diffF = self.F - self.E
+        diffG = self.G - self.E
+        self.E = glm.vec2(pos)
+        self.F = self.F + diffF
+        self.G = self.G + diffG
+
+    def translate_origin(self, diff):
+        self.E += glm.vec2(diff)
+        self.F += glm.vec2(diff)
+        self.G += glm.vec2(diff)
 
 class AABB(Shape):
     def __init__(self, AA, BB, *args, **kwargs):
@@ -116,13 +167,26 @@ class AABB(Shape):
             return oth.intersect(self)
         if isinstance(oth, Point):
             return oth.intersect(self)
-        Exception("No known way to intersect with shape!")
+        raise Exception("No known way to intersect with shape!")
 
     def draw(self):
         AA, BB = intersect._aabb_fix(self.AA, self.BB)
         AB = glm.vec2(BB.x, AA.y)
         BA = glm.vec2(AA.x, BB.y)
         sim.draw_quad(AA, AB, BB, BA, color=self.color, filled=self.filled)
+
+    def get_origin(self):
+        return self.AA
+
+    def set_origin(self, pos):
+        diff = self.BB - self.AA
+        self.AA = glm.vec2(pos)
+        self.BB = self.AA + diff
+
+    def translate_origin(self, diff):
+        self.AA += glm.vec2(diff)
+        self.BB += glm.vec2(diff)
+
 
 class Parallelogram(Shape):
     def __init__(self, O, N, M, *args, **kwargs):
@@ -149,7 +213,7 @@ class Parallelogram(Shape):
                     oth.O, oth.N, oth.M)
         if isinstance(oth, Point):
             return oth.intersect(self)
-        Exception("No known way to intersect with shape!")
+        raise Exception("No known way to intersect with shape!")
 
     def draw(self):
         OO = self.O
@@ -158,31 +222,50 @@ class Parallelogram(Shape):
         MM = OO + self.M
         sim.draw_quad(OO, NN, MN, MM, color=self.color, filled=self.filled)
 
+    def get_origin(self):
+        return self.O
+
+    def set_origin(self, pos):
+        self.O = glm.vec2(pos)
+
+    def translate_origin(self, diff):
+        self.O += glm.vec2(diff)
+
+
 class Point(Shape):
-    def __init__(self, pos, *args, **kwargs):
+    def __init__(self, P, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.pos = glm.vec2(pos)
+        self.P = glm.vec2(P)
 
     # for point and segment we will consider our point to be a circle because
     # it's not very practical to consider it a mathematical point for the rest
     # of the framework
     def intersect(self, oth):
         if isinstance(oth, Circle):
-            return intersect.point_circle(self.pos, oth.C, oth.r)
+            return intersect.point_circle(self.P, oth.C, oth.r)
         if isinstance(oth, Segment):
             r = POINT_RELATIVE_SIZE * sim.state.scale
-            return intersect.segment_circle(self.pos, r, oth.A, oth.B)
+            return intersect.segment_circle(oth.A, oth.B, self.P, r)
         if isinstance(oth, Triangle):
-            return intersect.point_triangle(self.pos, oth.E, oth.F, oth.G)
+            return intersect.point_triangle(self.P, oth.E, oth.F, oth.G)
         if isinstance(oth, AABB):
-            return intersect.point_aabb(self.pos, oth.AA, oth.BB)
+            return intersect.point_aabb(self.P, oth.AA, oth.BB)
         if isinstance(oth, Parallelogram):
-            return intersect.point_parallelogram(self.pos, oth.O, oth.N, oth.M)
+            return intersect.point_parallelogram(self.P, oth.O, oth.N, oth.M)
         if isinstance(oth, Point):
             r = POINT_RELATIVE_SIZE * sim.state.scale
-            return intersect.point_circle(self.pos, oth.pos, r)
-        Exception("No known way to intersect with shape!")
+            return intersect.point_circle(self.P, oth.P, r)
+        raise Exception("No known way to intersect with shape!")
 
     def draw(self):
         r = POINT_RELATIVE_SIZE * sim.state.scale
-        sim.draw_circle(self.pos, r, color=self.color, filled=self.filled)
+        sim.draw_circle(self.P, r, color=self.color, filled=self.filled)
+
+    def get_origin(self):
+        return self.P
+
+    def set_origin(self, pos):
+        self.P = glm.vec2(pos)
+
+    def translate_origin(self, diff):
+        self.P += glm.vec2(diff)
