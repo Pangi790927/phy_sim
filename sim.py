@@ -4,6 +4,10 @@ import glm
 import numpy as np
 from pygame.locals import *
 import pygame.freetype
+import os
+
+SIM_PKG_DIR = os.path.dirname(__file__)
+sys.path.append(SIM_PKG_DIR)
 
 import sim_utils
 import intersect
@@ -11,7 +15,7 @@ import intersect
 # Defines:
 # ==============================================================================
 
-SIM_FONT_NAME = "font/static/FiraCode-Regular.ttf"
+SIM_FONT_NAME = os.path.join(SIM_PKG_DIR, "font/static/FiraCode-Regular.ttf")
 SIM_FONT_SIZE = 16
 
 DEFAULT_VERTEX_SHADER = """
