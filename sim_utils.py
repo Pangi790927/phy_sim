@@ -153,9 +153,3 @@ class SimFont:
 
     def char_height_px(self):
         return self.font.get_sized_height()
-
-    def char_width(self):
-        return px2dist(self.char_width_px())
-
-    def char_height(self):
-        return px2dist(self.char_height_px())

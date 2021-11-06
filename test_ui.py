@@ -56,6 +56,22 @@ btn.on_hover = on_hover
 
 sim.interactive_add(btn)
 
+def rot_text(text, pos, align):
+    sim.draw_circle(pos, 0.005 * s, filled=True)
+    rotated=True
+    ui.TextLine(text, pos=pos, align=align, rotated=rotated).draw()
+
+def draw_rotated_text():
+    rot_text(text = "xlyt", pos=(s*1/4, -s*1/4), align=(ui.XLEFT,   ui.YTOP))
+    rot_text(text = "xlyc", pos=(s*2/4, -s*1/4), align=(ui.XLEFT,   ui.YCENTER))
+    rot_text(text = "xlyb", pos=(s*3/4, -s*1/4), align=(ui.XLEFT,   ui.YBOTTOM))
+    rot_text(text = "xcyt", pos=(s*1/4, -s*2/4), align=(ui.XCENTER, ui.YTOP))
+    rot_text(text = "xcyc", pos=(s*2/4, -s*2/4), align=(ui.XCENTER, ui.YCENTER))
+    rot_text(text = "xcyb", pos=(s*3/4, -s*2/4), align=(ui.XCENTER, ui.YBOTTOM))
+    rot_text(text = "xryt", pos=(s*1/4, -s*3/4), align=(ui.XRIGHT,  ui.YTOP))
+    rot_text(text = "xryc", pos=(s*2/4, -s*3/4), align=(ui.XRIGHT,  ui.YCENTER))
+    rot_text(text = "xryb", pos=(s*3/4, -s*3/4), align=(ui.XRIGHT,  ui.YBOTTOM))
+
 def draw_fn():
     fps.update()
 
@@ -78,5 +94,6 @@ def draw_fn():
     tb = ui.TextBlock(metadata, pos=(-s, s-0.01),
             limits_px=(400, 400), xalign=ui.XCENTER)
     tb.draw()
+    draw_rotated_text()
 
 sim.loop(draw_fn=draw_fn)

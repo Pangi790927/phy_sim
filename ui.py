@@ -6,18 +6,19 @@
 # This module will use the `interactive` module and most widgets will just
 # inherit the `Interactive` class
 
-import sim
 import glm
+import textwrap
+
 import interactive
 import shapes
-import textwrap
+import sim
 
 XLEFT = 0       # x is the leftmost point of the text and is left aligned
 XCENTER = 1     # x is the center of the text and is centered
 XRIGHT = 2      # x is the rightmost point of the text and is right aligned
-YABOVE = 0      # y is the bottommost point and the text is above y
+YBOTTOM = 0     # y is the bottommost point and the text is above y
 YCENTER = 1     # y is the centermost point and the text is centered on y
-YBELLOW = 2     # y is the topmost point and the text is bellow y
+YTOP = 2        # y is the topmost point and the text is bellow y
 
 Color=sim.Color
 
@@ -30,8 +31,8 @@ class TextLine:
     # - you must choose to use either pos or pos_px, where pos_px is the position
     # in pixels
     # - text can't start at a negative position or error will be thrown
-    def __init__(self, text, pos=None, pos_px=None, align=(XLEFT, YBELLOW),
-            color=Color.BLACK, font_obj=None, font_size=None):
+    def __init__(self, text, pos=None, pos_px=None, align=(XLEFT, YTOP),
+            color=Color.BLACK, font_obj=None, font_size=None, rotated=False):
         self.align = align
         if pos:
             self.pos_px = sim.pos2screen(pos)
@@ -47,43 +48,63 @@ class TextLine:
             self.font_obj = sim.load_font_size(font_size)
         else:
             self.font_obj = font_obj
+        self.rotated = rotated
         self.A_rect = self.font_obj.font.get_rect('A')
 
     def draw(self):
         text_width = self.font_obj.char_width_px() * len(self.text)
         text_height = self.font_obj.char_height_px()
         pos_px = [self.pos_px[0], self.pos_px[1]]
-        if self.align[0] == XLEFT:
-            pass
-        elif self.align[0] == XCENTER:
-            pos_px[0] -= text_width / 2
-        elif self.align[0] == XRIGHT:
-            pos_px[0] -= text_width
-        # self._draw_axis(pos_px, text_width)
-        if self.align[1] == YBELLOW:
-            pass
-        elif self.align[1] == YABOVE:
-            pos_px[1] -= text_height
-        text_surf, rect = self.font_obj.font.render(self.text, self.color)
-        if self.align[1] == YCENTER:
-            pos_px[1] -= rect.height // 2
+        xmod = 0
+        ymod = 0
+        if self.rotated:
+            if self.align[1] == YCENTER:
+                ymod -= text_width / 2
+            elif self.align[1] == YBOTTOM:
+                ymod -= text_width
+            if self.align[0] == XRIGHT:
+                xmod -= text_height
+            text_surf, rect = self.font_obj.font.render(self.text, self.color)
+            if self.align[0] == XCENTER:
+                xmod -= rect.height // 2
+            else:
+                xmod += self.A_rect.y - rect.y
         else:
-            pos_px[1] += self.A_rect.y - rect.y
+            if self.align[0] == XLEFT:
+                pass
+            elif self.align[0] == XCENTER:
+                xmod -= text_width / 2
+            elif self.align[0] == XRIGHT:
+                xmod -= text_width
+            if self.align[1] == YTOP:
+                pass
+            elif self.align[1] == YBOTTOM:
+                ymod -= text_height
+            text_surf, rect = self.font_obj.font.render(self.text, self.color)
+            if self.align[1] == YCENTER:
+                ymod -= rect.height // 2
+            else:
+                ymod += self.A_rect.y - rect.y
+        pos_px[0] += xmod
+        pos_px[1] += ymod
         if pos_px[0] < 0 or self.pos_px[1] < 0:
             raise Exception(
                     "Negative position for text is not allowed(check align)")
-        sim.draw_surf(pos_px, text_surf)
+        if self.rotated:
+            sim.draw_surf(pos_px, text_surf, rotate=90)
+        else:
+            sim.draw_surf(pos_px, text_surf, rotate=0)
 
-    def _draw_axis(self, pos_px, text_width):
-        old_px = (pos_px[0], pos_px[1])
-        pos = glm.vec2(sim.screen2pos(old_px))
-        dif = glm.vec2(sim.px2dist(text_width), 0)
-        sim.draw_line(pos, pos + dif)
+    # def _draw_axis(self, pos_px, text_width):
+    #     old_px = (pos_px[0], pos_px[1])
+    #     pos = glm.vec2(sim.screen2pos(old_px))
+    #     dif = glm.vec2(sim.px2dist(text_width), 0)
+    #     sim.draw_line(pos, pos + dif)
 
 # this widget is a large block of text
 class TextBlock:
     # - for a TextBlock you can only controll xalign, yalign will be
-    # YBELLOW
+    # YTOP
     # - `limits` sets the maximum width and heigth this widget can have
     # - you can choose either `limits` or `limits_px`, `limits` has priority
     # - here alignment is relative to the bound of the TextBlock, not to pos,
@@ -101,8 +122,10 @@ class TextBlock:
             self.limits = limits
         elif limits_px:
             self.limits_px = limits_px
-        else:
+        elif limits:
             self.limits_px = (sim.dist2px(limits[0]), sim.dist2px(limits[1]))
+        else:
+            self.limits_px = (10000, 10000)
         self.text = text
         self.color = color
         if not font_obj:
@@ -119,17 +142,12 @@ class TextBlock:
         max_row_cnt = int(self.limits_px[1] / self.font_obj.char_height_px())
         if max_row_cnt == 0:
             return
-        intermediary = textwrap.wrap(self.text, width=max_col_cnt,
-            replace_whitespace=False)
-        intermediary = intermediary[:max_row_cnt]
-        drawtext = []
 
         # https://stackoverflow.com/questions/1166317/
-        # body = '\n'.join(['\n'.join(textwrap.wrap(line, 90,
-        #          break_long_words=False, replace_whitespace=False))
-        #          for line in body.splitlines() if line.strip() != ''])
-        for i in intermediary:
-            drawtext = drawtext + i.split('\n')
+        drawtext = '\n'.join(['\n'.join(textwrap.wrap(line, width=max_col_cnt,
+                 break_long_words=False, replace_whitespace=False))
+                 for line in self.text.splitlines() if line.strip() != ''])
+        drawtext = drawtext.splitlines()
 
         pos_px = (self.pos_px[0], self.pos_px[1])
         pos_y = pos_px[1]
@@ -140,7 +158,7 @@ class TextBlock:
             xpos += self.limits_px[0]
         for d in drawtext:
             tl = TextLine(d, pos_px=(xpos, pos_y), color=self.color,
-                    font_obj=self.font_obj, align=(self.xalign, YBELLOW))
+                    font_obj=self.font_obj, align=(self.xalign, YTOP))
             pos_y += self.font_obj.char_height_px()
             tl.draw()
 

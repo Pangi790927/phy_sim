@@ -6,8 +6,7 @@ from pygame.locals import *
 import pygame.freetype
 import os
 
-SIM_PKG_DIR = os.path.dirname(__file__)
-sys.path.append(SIM_PKG_DIR)
+# sys.path.append(SIM_PKG_DIR)
 
 import sim_utils
 import intersect
@@ -15,6 +14,7 @@ import intersect
 # Defines:
 # ==============================================================================
 
+SIM_PKG_DIR = os.path.dirname(__file__)
 SIM_FONT_NAME = os.path.join(SIM_PKG_DIR, "font/static/FiraCode-Regular.ttf")
 SIM_FONT_SIZE = 16
 
@@ -286,8 +286,10 @@ def draw_dot(pos, color=Color.BLACK):
     draw_line(pos, pos + left, color)
     draw_line(pos, pos + right, color)
 
-def draw_surf(pos_px, surface):
+def draw_surf(pos_px, surface, rotate=0):
     draw_batch()
+    if rotate != 0:
+        surface = pygame.transform.rotate(surface, rotate)
     if state.gl:
         gl = state.gl
         old_prog = state.gl_curr_shader
