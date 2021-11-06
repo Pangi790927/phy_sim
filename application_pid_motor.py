@@ -1,6 +1,7 @@
 import sim
 import utils
 import ui
+import shapes
 import interactive
 import plots
 
@@ -22,6 +23,16 @@ s = sim.state.scale
 frame_update = utils.FpsCounter(update_interval_sec=1/INTENDED_FPS)
 fps = utils.FpsCounter()
 
+mov_reference = interactive.Movable(shapes.Circle, [0.5, 0.5],
+        0.05, filled=True)
+sim.interactive_add(mov_reference)
+
+def ref_to_angle():
+    ret = np.arctan2(mov_reference.shape.C.y, mov_reference.shape.C.x)
+    if ret < 0:
+        ret = np.pi * 2 + ret
+    return ret
+
 d_t = 1/INTENDED_FPS
 K_t = .0182
 K_e = .0182
@@ -35,7 +46,7 @@ sim_state = sim.dotdict({
     'angle': deg2rad(-60),
     'angl_speed': 0,
     'angl_acc': 0,
-    'ref_angle': deg2rad(10),
+    'ref_angle': ref_to_angle(),
     'vcc': 0,
     'time': None
 })
@@ -44,7 +55,11 @@ sim_state.angl_acc = -g*np.sin(sim_state.angle)/r
 angle_plot = plots.Plot(
     [1.0, 0.5], [2, 1],
     name="voltage",
+    DA=(0, 0),
+    DB=(5, 0),
+    mode=plots.Defs.MODE_SLIDING,
 )
+angle_plot.mode_opts.append(plots.Defs.OPT_SLIDE_RESIZE_Y)
 agraph = angle_plot.create_graph()
 
 # Solve area(for the student to modify):
@@ -311,6 +326,7 @@ def update_fn():
     if not st.time:
         st.time = 0
 
+    st.ref_angle = ref_to_angle()
     voltage = regulator(st.time, st.angle, st.ref_angle)
     step_cnt = 1000
     for i in range(step_cnt):

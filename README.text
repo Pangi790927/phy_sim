@@ -1,27 +1,27 @@
 How to use this:
 1. Install python
 2. Install sdl
-	TODO: instructions
+    TODO: instructions
 3. Install the following modules:
-	- pygame
-	- numpy
-	- pyglm (!not glm!)
-	Example:
-		python3 -m pip install pygame
-	Other modules required for some features are listed bellow
+    - pygame
+    - numpy
+    - pyglm (!not glm!)
+    Example:
+        python3 -m pip install pygame
+    Other modules required for some features are listed bellow
 
 4. Check an example of interest and run it with python:
-	Example:
-		python3 example_rotating.py
+    Example:
+        python3 example_rotating.py
 5. Make your own script in the root folder and run it like above
 
 
 main modules:
-	sim, intersect, shapes, interactive, ui
+    sim, intersect, shapes, interactive, ui
 
-module/feature	main	shaders
+module/feature  main    shaders
 --------------------------------------------------------------------------------
-pygame			X		X
-numpy			X		X
-pyglm			X		X
-PyOpenGL		-		X
+pygame          X       X
+numpy           X       X
+pyglm           X       X
+PyOpenGL        -       X
